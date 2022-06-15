@@ -19,9 +19,20 @@ sealed trait Stream[+A]:
 
     loop(this, Nil).reverse
 
+  // Ex. 5.2
+  def take(n: Int): Stream[A] = 
+    if n == 0 then return Empty
+    else 
+      this match 
+        case Empty => Empty
+        case Cons(h, t) => Cons(h, () => t().take(n - 1))
 
-
-
+  def drop(n: Int): Stream[A] = 
+    if n == 0 then return this 
+    else 
+      this match 
+        case Empty => Empty
+        case Cons(_, t) => t().drop(n - 1) 
 
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -43,5 +54,10 @@ object Stream:
 val stream = Stream(1, 2, 3) 
 stream.toListRec
 stream.toList
-
+stream.take(3).toList
+stream.take(2).toList
+stream.take(4).toList
+stream.drop(0).toList
+stream.drop(2).toList
+stream.drop(4).toList
 
