@@ -1,6 +1,8 @@
 import scala.annotation.tailrec
 
 sealed trait Stream[+A]:
+  import Stream._
+
   def headOption: Option[A] = this match 
     case Empty => None
     case Cons(h, t) => Some(h())
@@ -34,6 +36,12 @@ sealed trait Stream[+A]:
         case Empty => Empty
         case Cons(_, t) => t().drop(n - 1) 
 
+  // Ex. 5.3
+  def takeWhile(p: A => Boolean): Stream[A] = 
+    this match
+      case Cons(h, t) if p(h()) => cons(h(), t().takeWhile(p))
+      case _                    => Empty
+
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
 
@@ -52,6 +60,8 @@ object Stream:
 // Tests
 
 val stream = Stream(1, 2, 3) 
+val stream2 = Stream(1, 3, 4) 
+
 stream.toListRec
 stream.toList
 stream.take(3).toList
@@ -60,4 +70,7 @@ stream.take(4).toList
 stream.drop(0).toList
 stream.drop(2).toList
 stream.drop(4).toList
-
+stream2.takeWhile((n) => n % 2 == 1).toList
+stream.takeWhile((n) => n % 2 == 1).toList
+stream.takeWhile((n) => n % 2 == 0).toList
+stream.takeWhile((n) => n % 1 == 0).toList
