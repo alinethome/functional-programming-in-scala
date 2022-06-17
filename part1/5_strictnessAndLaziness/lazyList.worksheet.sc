@@ -7,6 +7,14 @@ sealed trait Stream[+A]:
     case Empty => None
     case Cons(h, t) => Some(h())
 
+  def foldRight[B](z: => B)(f: (A, => B) => B): B = 
+    this match 
+      case Cons(h, t) => f(h(), t().foldRight(z)(f))
+      case _          => z
+
+  def exists(p: A => Boolean): Boolean = 
+    foldRight(false)((a, b) => p(a) || b)
+
   // Ex. 5.1
   def toListRec: List[A] = this match
     case Empty    => Nil
@@ -42,6 +50,18 @@ sealed trait Stream[+A]:
       case Cons(h, t) if p(h()) => cons(h(), t().takeWhile(p))
       case _                    => Empty
 
+  // Ex. 5.4
+  def forAll(p: A => Boolean): Boolean = 
+    foldRight(true)((h, acc) => p(h) && acc)
+
+  // Ex. 5.5 
+  def takeWhileFR(p: A => Boolean): Stream[A] = 
+    foldRight[Stream[A]](Empty)((h, acc) => if p(h) then cons(h, acc) else Empty)
+
+  // Ex. 5.6
+  def headOptionFR: Option[A] = foldRight[Option[A]](None)((h, acc) => Some(h))
+      
+
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
 
@@ -61,6 +81,7 @@ object Stream:
 
 val stream = Stream(1, 2, 3) 
 val stream2 = Stream(1, 3, 4) 
+val empty = Stream()
 
 stream.toListRec
 stream.toList
@@ -74,3 +95,11 @@ stream2.takeWhile((n) => n % 2 == 1).toList
 stream.takeWhile((n) => n % 2 == 1).toList
 stream.takeWhile((n) => n % 2 == 0).toList
 stream.takeWhile((n) => n % 1 == 0).toList
+stream.forAll((n) => n % 2 == 0)
+stream.forAll((n) => n % 1 == 0)
+stream2.takeWhileFR((n) => n % 2 == 1).toList
+stream.takeWhileFR((n) => n % 2 == 1).toList
+stream.takeWhileFR((n) => n % 2 == 0).toList
+stream.takeWhileFR((n) => n % 1 == 0).toList
+stream.headOptionFR
+empty.headOptionFR
