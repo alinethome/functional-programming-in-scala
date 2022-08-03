@@ -60,6 +60,21 @@ sealed trait Stream[+A]:
 
   // Ex. 5.6
   def headOptionFR: Option[A] = foldRight[Option[A]](None)((h, acc) => Some(h))
+
+  // Ex. 5.7
+  def map[B](f: A => B): Stream[B] =
+    foldRight[Stream[B]](Empty)((h, t) => cons(f(h), t))
+
+  def filter(p: A => Boolean): Stream[A] = 
+    foldRight[Stream[A]](Empty)((h, t) => 
+        if p(h) then cons(h, t)
+        else t)
+
+  def append[B >: A](bs: Stream[B]): Stream[B] = 
+    foldRight(bs)((h, t) => cons(h, t))
+
+  def flatMap[B](f: A => Stream[B]): Stream[B] = 
+    foldRight[Stream[B]](Empty)((h, t) => f(h).append(t))
       
 
 case object Empty extends Stream[Nothing]
@@ -76,12 +91,19 @@ object Stream:
   def apply[A](as: A*): Stream[A] = 
     if (as.isEmpty) empty else cons(as.head, apply(as.tail: _*))
 
+  // ex 5.8
+  def constant[A](a: A): Stream[A] = cons(a, constant(a))
+
+  // ex 5.9
+  def from(n: Int): Stream[Int] = cons(n, from(n+1))
+
 
 // Tests
 
 val stream = Stream(1, 2, 3) 
 val stream2 = Stream(1, 3, 4) 
 val empty = Stream()
+val inf: Stream[Int] = Stream.cons(1, inf)
 
 stream.toListRec
 stream.toList
@@ -103,3 +125,11 @@ stream.takeWhileFR((n) => n % 2 == 0).toList
 stream.takeWhileFR((n) => n % 1 == 0).toList
 stream.headOptionFR
 empty.headOptionFR
+stream.map(n => n + 1).toList
+stream.filter(n => n % 2 == 0).toList
+stream2.filter(n => n % 2 == 1).toList
+stream.append(stream2).toList
+stream.flatMap(n => Stream(n)).toList
+inf.take(5).toList
+Stream.constant(5).take(5).toList
+Stream.from(3).take(5).toList
