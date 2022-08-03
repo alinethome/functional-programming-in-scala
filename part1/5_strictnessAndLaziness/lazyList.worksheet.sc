@@ -75,7 +75,49 @@ sealed trait Stream[+A]:
 
   def flatMap[B](f: A => Stream[B]): Stream[B] = 
     foldRight[Stream[B]](Empty)((h, t) => f(h).append(t))
-      
+
+  // Ex. 5.13
+  def mapUF[B](f: A => B): Stream[B] =
+    unfold(this)(as => 
+        as match 
+          case Empty => None
+          case Cons(h, t) => Some((f(h()), t())))
+
+  def takeUF(n: Int): Stream[A] = 
+    unfold((this, n)){
+      case (Empty, _)      => None
+      case (_, 0)          => None
+      case (Cons(h, t), m) => Some(h(), (t(), m - 1))
+    }
+
+  def takeWhileUF(p: A => Boolean): Stream[A] = 
+    unfold(this){
+      case Empty      => None
+      case Cons(h, t) => 
+        val head = h()
+
+        if p(head) then Some(head, t()) 
+        else None
+    }
+
+  def zipWith[B,C](bs: Stream[B])(f: (A, B) => C): Stream[C] = 
+    unfold((this, bs)){
+      case (Cons(ha, ta), Cons(hb, tb)) => 
+        Some(f(ha(), hb()), (ta(), tb()))
+      case _                            => None
+    }
+
+  def zipAll[B](bs: Stream[B]): Stream[(Option[A], Option[B])] =
+    unfold((this, bs)){
+      case (Empty, Empty)               => None
+      case (Cons(ha, ta), Empty)        => 
+        Some((Some(ha()), None), (ta(), Empty))
+      case (Empty, Cons(hb, tb))        =>
+        Some((None, Some(hb())), (Empty, tb()))
+      case (Cons(ha, ta), Cons(hb, tb)) => 
+        Some((Some(ha()), Some(hb())), (ta(), tb()))
+    }
+
 
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -97,6 +139,26 @@ object Stream:
   // ex 5.9
   def from(n: Int): Stream[Int] = cons(n, from(n+1))
 
+  // ex 5.10
+  def fibs: Stream[Int] = 
+    def fibs(m: Int, n: Int): Stream[Int] =
+      cons(n, fibs(n, n+m))
+
+    fibs(0, 1) 
+
+  // ex 5.11
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = f(z) match 
+    case None         => empty
+    case Some((a, s)) => cons(a, unfold(s)(f))
+
+  // ex 5.12
+  def onesUF: Stream[Int] = unfold(1)(n => Some(1, 1))
+
+  def constantUF[A](a: A): Stream[A] = unfold(a)(c => Some(c, c))
+
+  def fromUF(a: Int): Stream[Int] = unfold(a)(n => Some(n, n + 1))
+
+  def fibsUF: Stream[Int] = unfold((0, 1))((m, n) => Some(n, (n, n+m)))
 
 // Tests
 
@@ -104,6 +166,8 @@ val stream = Stream(1, 2, 3)
 val stream2 = Stream(1, 3, 4) 
 val empty = Stream()
 val inf: Stream[Int] = Stream.cons(1, inf)
+val multiplesOf2LessThan10 = (n: Int) => if (2*n >= 10) then None 
+                                         else Some((n*2, n+1))
 
 stream.toListRec
 stream.toList
@@ -133,3 +197,20 @@ stream.flatMap(n => Stream(n)).toList
 inf.take(5).toList
 Stream.constant(5).take(5).toList
 Stream.from(3).take(5).toList
+Stream.fibs.take(5).toList
+Stream.unfold(1)(multiplesOf2LessThan10).toList
+Stream.onesUF.take(5).toList
+Stream.constantUF('a').take(7).toList
+Stream.fromUF(3).take(3).toList
+Stream.fibsUF.take(10).toList
+stream.mapUF(n => n + 1).toList
+stream.takeUF(3).toList
+stream.takeUF(5).toList
+stream.takeUF(2).toList
+stream.takeUF(0).toList
+stream.takeUF(1).toList
+stream2.takeWhileUF(n => n % 2 == 1).toList
+stream2.takeWhileUF(n => n % 2 == 0).toList
+stream.zipWith(stream2)((_,_)).toList
+stream.zipAll(Stream.fibs.take(2))
+      .toList
