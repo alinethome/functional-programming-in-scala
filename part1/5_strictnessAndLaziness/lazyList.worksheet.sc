@@ -118,6 +118,18 @@ sealed trait Stream[+A]:
         Some((Some(ha()), Some(hb())), (ta(), tb()))
     }
 
+  def startsWith[A](s2: Stream[A]): Boolean = 
+    this.zipAll(s2)
+        .foldRight(true)((pair, acc) => pair match 
+              case (None, Some(_))      => false
+              case (_, None)            => true
+              case (Some(a1), Some(a2)) => acc && (a1 == a2)
+        )
+
+  def tails: Stream[Stream[A]] = 
+    unfold(this)(s => s match 
+      case Empty      => None
+      case Cons(h, t) => Some((s, t()))).append(Stream(Empty))
 
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -214,3 +226,7 @@ stream2.takeWhileUF(n => n % 2 == 0).toList
 stream.zipWith(stream2)((_,_)).toList
 stream.zipAll(Stream.fibs.take(2))
       .toList
+stream.startsWith(stream2)
+stream.startsWith(stream2.take(1))
+stream.tails.map(_.toList).toList
+
