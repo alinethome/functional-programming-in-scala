@@ -63,8 +63,37 @@ def ints(count: Int)(rng: RNG): (List[Int], RNG) =
 
   loop(count, (List(), rng))
 
+// ex 6.5
+def doubleMap: Rand[Double] = 
+  map(int)(_/(Int.MaxValue.toDouble + 1))
 
+// ex 6.6
+def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = 
+  rng => 
+    val (a, rng2) = ra(rng) 
+    val (b, rng3) = rb(rng2) 
 
+    (f(a, b), rng3) 
+
+def both[A, B](ra: Rand[A], rb: Rand[B]): Rand[(A, B)] =
+  map2(ra, rb)((_, _)) 
+
+val randIntDouble: Rand[(Double, Int)] = both(double, int) 
+val randDoubleInt: Rand[(Int, Double)] = both(int, double) 
+    
+// ex 6.7
+def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = 
+  def go(fs: List[Rand[A]], as: List[A], r: RNG): (List[A], RNG) = 
+    fs match
+      case List() => (as, r) 
+      case h :: t =>
+        val (a, r2) = h(r)
+        go(t, a :: as, r2)
+
+  rng => go(fs, List(), rng)
+
+def intsSeq(count: Int): Rand[List[Int]] = 
+  sequence(List.fill(count)(int))
 
 
 
@@ -78,3 +107,6 @@ intDouble(r)
 doubleInt(r) 
 double3(r) 
 ints(3)(r) 
+doubleMap(r) 
+both(doubleMap, doubleMap)(r) 
+intsSeq(3)(r) 
