@@ -131,6 +131,14 @@ sealed trait Stream[+A]:
       case Empty      => None
       case Cons(h, t) => Some((s, t()))).append(Stream(Empty))
 
+  def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] = 
+    this.foldRight((z, Stream(z)))((a, acc) => 
+        val b1 = acc._1
+        val b2 = f(a, b1) 
+        val bs = acc._2
+
+        (b2, cons(b2, bs)))._2
+
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
 
@@ -229,4 +237,4 @@ stream.zipAll(Stream.fibs.take(2))
 stream.startsWith(stream2)
 stream.startsWith(stream2.take(1))
 stream.tails.map(_.toList).toList
-
+stream.scanRight(0)(_ + _).toList
