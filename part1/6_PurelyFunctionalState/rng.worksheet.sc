@@ -16,7 +16,8 @@ def map[A,B](s: Rand[A])(f: A => B): Rand[B] =
     val (a, rng2) = s(rng) 
     (f(a), rng2)
 
-
+def rollDieBad: Rand[Int] = nonNegativeLessThan(6) 
+def rollDie: Rand[Int] = map(nonNegativeLessThan(6))(_ + 1) 
 
 // ex 6.1
 def nonNegativeInt(rng: RNG) = 
@@ -95,6 +96,25 @@ def sequence[A](fs: List[Rand[A]]): Rand[List[A]] =
 def intsSeq(count: Int): Rand[List[Int]] = 
   sequence(List.fill(count)(int))
 
+// ex 6.8
+def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = 
+  rng => 
+    val (a, rng2) = f(rng)
+    g(a)(rng2) 
+
+def nonNegativeLessThan(n: Int): Rand[Int] = 
+  flatMap(rng => nonNegativeInt(rng))(i => 
+      val m = i % n
+      if (i - m + n - 1) >= 0 then unit(m) 
+      else nonNegativeLessThan(n))
+
+// ex 6.9 
+def mapFM[A,B](s: Rand[A])(f: A => B): Rand[B] = 
+  flatMap(s)(a => unit(f(a)))
+
+def map2FM[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = 
+  flatMap(ra)(a => mapFM(rb)(b => f(a, b)))
+
 
 
 // Tests
@@ -110,3 +130,6 @@ ints(3)(r)
 doubleMap(r) 
 both(doubleMap, doubleMap)(r) 
 intsSeq(3)(r) 
+nonNegativeLessThan(3)(r)  
+rollDieBad(SimpleRNG(5)) 
+rollDie(SimpleRNG(5)) 
