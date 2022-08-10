@@ -31,5 +31,50 @@ object State:
 
     State(go(sas, List(), _))
 
+  def get[S]: State[S, S] = State(s => (s, s))
+  def set[S](s: S): State[S, Unit] = State(_ => ((), s))
+  def modify[S](f: S => S): State[S, Unit] = for {
+      s <- get
+      _ <- set(f(s))
+    } yield ()
+
+
+sealed trait Input 
+case object Coin extends Input
+case object Turn extends Input
+
+case class Machine(locked: Boolean, candies: Int, coins: Int) 
+
+def update(input: Input)(machine: Machine): Machine = input match 
+  case Coin if machine.locked && machine.candies > 0 => 
+    Machine(false, machine.candies, machine.coins + 1) 
+  case Turn if !machine.locked && machine.candies > 0 => 
+    Machine(true, machine.candies - 1, machine.coins + 1) 
+  case _ => machine
+
+
+// def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = 
+  
+
+
+// test
+
+val m = Machine(true, 5, 0) 
+val inputs = List(Coin, Turn, Coin, Coin, Turn, Turn) 
+val transformations = inputs.map(update(_))
+val init: State[Machine, (Int, Int)] = State(m => ((m.candies, m.coins), m))
+// val first = init.flatMap(
+
+// val g = (pair) => 
+
+// transformations.foldRight(init(m))((t, s) =>
+//     s.flatMap()
+//     ) 
+
+update(Coin)(m) 
+
+init.run(m) 
+
+State.modify(update(Coin))
 
 
